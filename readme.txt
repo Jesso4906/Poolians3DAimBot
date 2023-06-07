@@ -2,6 +2,8 @@ Aim bot for: https://store.steampowered.com/app/670290/Real_Pool_3D__Poolians/
 
 While the game is running, just run PooliansAimBotInjector.exe. To avoid crashing, you might want to wait until you are in a match.
 
+Although ricochet shots are not supported, you can perform combination shots.
+
 Controls:
   ins - Exit
   R - reset (if angles are off)
