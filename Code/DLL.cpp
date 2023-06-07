@@ -100,6 +100,7 @@ DWORD WINAPI Thread(LPVOID param)
 			balls[0] = 1;
 			pocketNum = 0;
 			combinations = 0;
+			selectedBall = 0;
 
 			targetAngle = 0;
 			currentAngle = 0;
