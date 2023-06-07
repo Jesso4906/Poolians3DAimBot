@@ -20,7 +20,6 @@ DWORD WINAPI Thread(LPVOID param)
 	std::cout << "R - Reset (if angles are off)\n";
 	std::cout << "M - Increase number of target balls for a combination shot. Target ball 1 is the one you want to pocket.\n";
 	std::cout << ", - Change selected ball to edit if their are multible target balls\n";
-	std::cout << "R - Reset (if angles are off)\n";
 	std::cout << "0 - Toggle between selecting stripes vs solids\n";
 	std::cout << "1-8 - Select balls 1 - 8, or 9 - 15 if 0 is pressed\n";
 	std::cout << "Z-N - Select pocket where 1 is the bottom right (close to bar); going clockwise\n\n";
@@ -161,7 +160,7 @@ DWORD WINAPI Thread(LPVOID param)
 
 void UpdateConsole(int* balls, int selected, int pocket, int combinations, float targetAngle, float currentAngle)
 {
-	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), { 0, 10 });
+	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), { 0, 9 });
 
 	std::cout << "Target Pocket: " << pocket << "           \n";
 	std::cout << "\n(editing ball " << (selected + 1) << ")                  \n";
