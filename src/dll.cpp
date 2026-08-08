@@ -3,12 +3,35 @@
 
 #include <iostream>
 
-const uintptr_t billiardAppRefOffset = 0x154B0C;
-const uintptr_t ballsListOffset = 0x22B8; // 8B 8E ?? ?? ?? ?? 8B 0C B9 E8 ?? ?? ?? ?? 8B 96 ?? ?? ?? ?? 89 55 E8; esi should contain the CBilliardApp
-const uintptr_t playerCameraOffset = 0x1CC;
+const uintptr_t billiardAppRefOffset = 0x155B2C;
+const uintptr_t playerCameraOffset = 0x1D0;
 
 const uintptr_t ballPosOffset = 0x3C;
+const uintptr_t ballNumOffset = 0x54;
 const uintptr_t cameraPosOffset = 0x120;
+
+uintptr_t GetBallByNumber(uintptr_t billiardApp, int targetNum)
+{
+	for (int i = 0; i < 16; i++)
+	{
+		// 8B 8E ?? ?? ?? ?? 8B 14 B9 33 D7
+		// i just copied this from the assembly instructions
+		uintptr_t ecx = *(uintptr_t*)(billiardApp + 0x235C);
+		uintptr_t edx = *(uintptr_t*)(ecx + (i * 4));
+		edx ^= i;
+		edx ^= *(uintptr_t*)(billiardApp + 0x236C);
+
+		uintptr_t ball = *(uintptr_t*)(edx);
+
+		int num = *(int*)(ball + ballNumOffset);
+		if (num == targetNum)
+		{
+			return ball;
+		}
+	}
+	
+	return 0;
+}
 
 void UpdateConsole(int* balls, int selected, int pocket, int combinations, bool doBankShot, bool bankingCue, int selectedBankWall, float targetAngle, float currentAngle)
 {
@@ -67,8 +90,6 @@ DWORD WINAPI Thread(LPVOID param)
 	
 	uintptr_t gameDllBase = (uintptr_t)GetModuleHandle(L"game.dll");
 	uintptr_t billiardApp = *(uintptr_t*)(gameDllBase + billiardAppRefOffset);
-	uintptr_t ballsList = *(uintptr_t*)(billiardApp + ballsListOffset);
-	uintptr_t cueBall = *(uintptr_t*)ballsList;
 	uintptr_t playerCamera = *(uintptr_t*)(billiardApp + playerCameraOffset);
 
 	int solidsOrStripes = 0;
@@ -144,8 +165,6 @@ DWORD WINAPI Thread(LPVOID param)
 		if (GetAsyncKeyState(0x52) & 1) // R
 		{
 			billiardApp = *(uintptr_t*)(gameDllBase + billiardAppRefOffset);
-			ballsList = *(uintptr_t*)(billiardApp + ballsListOffset);
-			cueBall = *(uintptr_t*)ballsList;
 			playerCamera = *(uintptr_t*)(billiardApp + playerCameraOffset);
 
 			solidsOrStripes = 0;
@@ -162,8 +181,11 @@ DWORD WINAPI Thread(LPVOID param)
 			currentAngle = 0;
 		}
 		
-		uintptr_t targetBallPtr = ballsList + (0x4 * balls[0]);
-		uintptr_t targetBall = *(uintptr_t*)targetBallPtr;
+		uintptr_t targetBall = GetBallByNumber(billiardApp, balls[0]);
+		if (targetBall == 0) 
+		{
+			break;
+		}
 
 		float targetBallPos[2] = { *(float*)(targetBall + ballPosOffset), *(float*)(targetBall + ballPosOffset + 0x8) };
 
@@ -216,10 +238,15 @@ DWORD WINAPI Thread(LPVOID param)
 
 		float targetPosition[2] = { targetBallPos[0] + (direction[0] * 0.0565), targetBallPos[1] + (direction[1] * 0.0565) }; // location where the cue ball needs to hit
 
+		unsigned char failed = 0;
 		for (int i = 1; i <= combinations; i++) 
 		{
-			targetBallPtr = ballsList + (0x4 * balls[i]);
-			targetBall = *(uintptr_t*)targetBallPtr;
+			targetBall = GetBallByNumber(billiardApp, balls[i]);
+			if (targetBall == 0)
+			{
+				failed = 1;
+				break;
+			}
 
 			targetBallPos[0] = *(float*)(targetBall + 0x3C);
 			targetBallPos[1] = *(float*)(targetBall + 0x44);
@@ -232,6 +259,17 @@ DWORD WINAPI Thread(LPVOID param)
 
 			targetPosition[0] = targetBallPos[0] + (direction[0] * 0.0565);
 			targetPosition[1] = targetBallPos[1] + (direction[1] * 0.0565);
+		}
+
+		if (failed)
+		{
+			break;
+		}
+
+		uintptr_t cueBall = GetBallByNumber(billiardApp, 0);
+		if (cueBall == 0)
+		{
+			break;
 		}
 
 		float cueBallPos[2] = { *(float*)(cueBall + 0x3C), *(float*)(cueBall + 0x44) };
